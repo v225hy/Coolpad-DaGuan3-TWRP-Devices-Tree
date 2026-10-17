@@ -54,10 +54,43 @@ BOARD_DTB_OFFSET := 0x01f00000
 BOARD_HEADER_SIZE := 2128
 BOARD_VENDOR_CMDLINE := console=ttyS1,115200n8 buildvariant=user
 
-TARGET_PREBUILT_DTB := device/Coolpad/agn2262SG/prebuilt/dtb
+# ---------------------------------------------------------------------------
+# DTB
+#
+# build/make/core/Makefile:776-783
+#   ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+#   INSTALLED_DTBIMAGE_TARGET := $(PRODUCT_OUT)/dtb.img
+#   ifdef BOARD_PREBUILT_DTBIMAGE_DIR
+#   $(INSTALLED_DTBIMAGE_TARGET) : $(sort $(wildcard $(BOARD_PREBUILT_DTBIMAGE_DIR)/*.dtb))
+#           cat $^ > $@
+#   endif
+#   endif
+#
+# Note `ifdef` tests whether the variable is DEFINED, not whether it is true.
+# Setting BOARD_INCLUDE_DTB_IN_BOOTIMG := false still defines it, so
+# INSTALLED_DTBIMAGE_TARGET becomes $(PRODUCT_OUT)/dtb.img and
+# vendor_boot.img depends on it unconditionally (Makefile:1174) -- but with no
+# BOARD_PREBUILT_DTBIMAGE_DIR the recipe above is never emitted, so ninja dies:
+#   FAILED: ninja: 'out/target/product/agn2262SG/dtb.img', needed by
+#   'out/target/product/agn2262SG/vendor_boot.img', missing and no known rule
+#
+# Fix: point BOARD_PREBUILT_DTBIMAGE_DIR at a directory of *.dtb files. The rule
+# then simply `cat`s them into out/target/product/agn2262SG/dtb.img, which is
+# exactly the single concatenated DTB blob our stock vendor_boot contains
+# (dtb_size=159531, matching prebuilt/dtb byte for byte).
+#
+# TARGET_PREBUILT_DTB is intentionally NOT set: the AOSP makefile logic above
+# never consults it. Letting INTERNAL_VENDOR_BOOTIMAGE_ARGS emit --dtb
+# (Makefile:1112) is the only path that reaches mkbootimg, and doing it twice
+# via BOARD_MKBOOTIMG_ARGS would duplicate the argument.
+#
+# Side effects are contained: Makefile:887 guards the boot.img include with
+# `ifndef BUILDING_VENDOR_BOOT_IMAGE`, and Makefile:2193 guards recovery the
+# same way, so setting this true only affects the vendor_boot image we build.
+BOARD_PREBUILT_DTBIMAGE_DIR := device/Coolpad/agn2262SG/prebuilt/dtb_files
 TARGET_PREBUILT_DTBO := device/Coolpad/agn2262SG/prebuilt/dtbo.img
 BOARD_PREBUILT_DTBOIMAGE := device/Coolpad/agn2262SG/prebuilt/dtbo.img
-BOARD_INCLUDE_DTB_IN_BOOTIMG := false
+BOARD_INCLUDE_DTB_IN_BOOTIMG := true
 BOARD_INCLUDE_RECOVERY_DTBO := true
 BOARD_KERNEL_IMAGE_NAME := Image
 
@@ -69,7 +102,6 @@ BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_TAGS_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --dtb_offset $(BOARD_DTB_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --vendor_cmdline "$(BOARD_VENDOR_CMDLINE)"
-BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
 # Stock vendor ramdisk uses legacy LZ4
 BOARD_RAMDISK_USE_LZ4 := true
