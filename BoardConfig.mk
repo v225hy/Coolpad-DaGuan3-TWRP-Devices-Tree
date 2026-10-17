@@ -175,7 +175,10 @@ TW_INTERNAL_STORAGE_MOUNT_POINT := "data"
 TW_FLASH_FROM_STORAGE := true
 
 # SELinux
-TARGET_USES_PREBUILT_VENDOR_SEPOLICY := false
-BOARD_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
-BOARD_PLAT_PUBLIC_SEPOLICY_DIR :=
-BOARD_PLAT_PRIVATE_SEPOLICY_DIR :=
+# SELinux
+# No device-specific policy for now: rely on the stock recovery policy and run
+# permissive during bring-up (same approach as the working P720S20 tree).
+# Note: git does not track empty directories, so BOARD_SEPOLICY_DIRS pointing
+# at an empty sepolicy/ would resolve to a non-existent path after clone.
+TARGET_RECOVERY_SELINUX := permissive
+TW_HAS_SELINUX := true
