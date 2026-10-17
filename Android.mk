@@ -34,7 +34,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE        := $(subst -,_,$(basename $(1)))_recovery
 LOCAL_MODULE_STEM   := $(1)
 LOCAL_MODULE_CLASS  := ETC
-LOCAL_MODULE_PATH   := recovery/root/lib/modules
+LOCAL_MODULE_PATH   := $(TARGET_RECOVERY_OUT)/root/lib/modules
 LOCAL_SRC_FILES     := modules_recovery/$(1)
 LOCAL_MODULE_TAGS   := optional
 include $(BUILD_PREBUILT)
@@ -64,7 +64,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE        := modules_load_recovery
 LOCAL_MODULE_STEM   := modules.load.recovery
 LOCAL_MODULE_CLASS  := ETC
-LOCAL_MODULE_PATH   := recovery/root/lib/modules
+LOCAL_MODULE_PATH   := $(TARGET_RECOVERY_OUT)/root/lib/modules
 LOCAL_SRC_FILES     := modules_recovery/modules.load.recovery
 LOCAL_MODULE_TAGS   := optional
 include $(BUILD_PREBUILT)
@@ -73,7 +73,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE        := modules_dep_recovery
 LOCAL_MODULE_STEM   := modules.dep.recovery
 LOCAL_MODULE_CLASS  := ETC
-LOCAL_MODULE_PATH   := recovery/root/lib/modules
+LOCAL_MODULE_PATH   := $(TARGET_RECOVERY_OUT)/root/lib/modules
 LOCAL_SRC_FILES     := modules_recovery/modules.dep.recovery
 LOCAL_MODULE_TAGS   := optional
 include $(BUILD_PREBUILT)
@@ -82,7 +82,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE        := modules_softdep
 LOCAL_MODULE_STEM   := modules.softdep
 LOCAL_MODULE_CLASS  := ETC
-LOCAL_MODULE_PATH   := recovery/root/lib/modules
+LOCAL_MODULE_PATH   := $(TARGET_RECOVERY_OUT)/root/lib/modules
 LOCAL_SRC_FILES     := modules_recovery/modules.softdep
 LOCAL_MODULE_TAGS   := optional
 include $(BUILD_PREBUILT)
