@@ -54,9 +54,9 @@ BOARD_DTB_OFFSET := 0x01f00000
 BOARD_HEADER_SIZE := 2128
 BOARD_VENDOR_CMDLINE := console=ttyS1,115200n8 buildvariant=user
 
-TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb
-TARGET_PREBUILT_DTBO := $(DEVICE_PATH)/prebuilt/dtbo.img
-BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img
+TARGET_PREBUILT_DTB := device/Coolpad/agn2262SG/prebuilt/dtb
+TARGET_PREBUILT_DTBO := device/Coolpad/agn2262SG/prebuilt/dtbo.img
+BOARD_PREBUILT_DTBOIMAGE := device/Coolpad/agn2262SG/prebuilt/dtbo.img
 BOARD_INCLUDE_DTB_IN_BOOTIMG := false
 BOARD_INCLUDE_RECOVERY_DTBO := true
 BOARD_KERNEL_IMAGE_NAME := Image
@@ -137,14 +137,14 @@ TARGET_USES_MKE2FS := true
 
 # Recovery
 TARGET_RECOVERY_PIXEL_FORMAT := "ABGR_8888"
-TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery.fstab
-# NOTE: deliberately NOT setting TARGET_RECOVERY_DEVICE_DIRS to $(DEVICE_PATH):
+TARGET_RECOVERY_FSTAB := device/Coolpad/agn2262SG/recovery.fstab
+# NOTE: deliberately NOT setting TARGET_RECOVERY_DEVICE_DIRS to device/Coolpad/agn2262SG:
 # that copies the whole device tree (38 MB kernel + 42 MB modules) into the
 # recovery ramdisk, which cannot fit the 100 MB vendor_boot. Anything that must
 # land in the ramdisk goes under recovery/root/ instead.
-TARGET_RECOVERY_INITRC := $(DEVICE_PATH)/init.recovery.agn2262SG.rc
+TARGET_RECOVERY_INITRC := device/Coolpad/agn2262SG/init.recovery.agn2262SG.rc
 TARGET_USES_LOGD := true
-TARGET_RECOVERY_WIPE := $(DEVICE_PATH)/recovery/root/system/etc/recovery.wipe
+TARGET_RECOVERY_WIPE := device/Coolpad/agn2262SG/recovery/root/system/etc/recovery.wipe
 BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_SUPPRESS_EMMC_WIPE := true
 TW_INCLUDE_FBE_METADATA_DECRYPT := true
