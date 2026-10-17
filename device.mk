@@ -40,20 +40,34 @@ PRODUCT_COPY_FILES += \
 # 来源：vendor_boot vendor_ramdisk /lib/modules/（与内核 5.4.210 完全同源）
 # 顺序依据：原厂 modules.load.recovery
 # 必须整套打入 ramdisk，缺 trusty.ko 会导致 sprd-drm/gsp insmod 失败 -> 黑屏
+#
+# These are NOT copied with PRODUCT_COPY_FILES. A .ko is an ELF object, and
+# build/make/core/definitions.mk:2658 (copy-non-elf-file-checked) rejects any
+# ELF source with:
+#     error: found ELF prebuilt in PRODUCT_COPY_FILES,
+#            use cc_prebuilt_binary / cc_prebuilt_library_shared instead.
+# Instead Android.mk declares one BUILD_PREBUILT module per file and this list
+# pulls them in. Module names follow LOCAL_MODULE rules (no dots or dashes):
+# the .ko basename has dashes folded to underscores and gets a _recovery
+# suffix; LOCAL_MODULE_STEM restores the real on-disk filename.
 # ---------------------------------------------------------------------------
-PRODUCT_COPY_FILES += \
-    device/Coolpad/agn2262SG/modules_recovery/trusty.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/trusty.ko \
-    device/Coolpad/agn2262SG/modules_recovery/trusty-pm.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/trusty-pm.ko \
-    device/Coolpad/agn2262SG/modules_recovery/trusty-log.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/trusty-log.ko \
-    device/Coolpad/agn2262SG/modules_recovery/trusty-irq.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/trusty-irq.ko \
-    device/Coolpad/agn2262SG/modules_recovery/trusty-ipc.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/trusty-ipc.ko \
-    device/Coolpad/agn2262SG/modules_recovery/trusty-virtio.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/trusty-virtio.ko \
-    device/Coolpad/agn2262SG/modules_recovery/sprd_shm.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/sprd_shm.ko \
-    device/Coolpad/agn2262SG/modules_recovery/sprd_soc_id.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/sprd_soc_id.ko \
-    device/Coolpad/agn2262SG/modules_recovery/unisoc-iommu.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/unisoc-iommu.ko \
-    device/Coolpad/agn2262SG/modules_recovery/pwm-sprd.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/pwm-sprd.ko \
-    device/Coolpad/agn2262SG/modules_recovery/apsys-dvfs.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/apsys-dvfs.ko \
-    device/Coolpad/agn2262SG/modules_recovery/sprd-drm.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/sprd-drm.ko \
-    device/Coolpad/agn2262SG/modules_recovery/sprd-gsp.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/sprd-gsp.ko \
-    device/Coolpad/agn2262SG/modules_recovery/ptn38003a-i2c.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/ptn38003a-i2c.ko \
-    device/Coolpad/agn2262SG/modules_recovery/chipone-tddi-icnl9916.ko:$(TARGET_COPY_OUT_RECOVERY)/root/lib/modules/chipone-tddi-icnl9916.ko
+PRODUCT_PACKAGES += \
+    trusty_recovery \
+    trusty_pm_recovery \
+    trusty_log_recovery \
+    trusty_irq_recovery \
+    trusty_ipc_recovery \
+    trusty_virtio_recovery \
+    sprd_shm_recovery \
+    sprd_soc_id_recovery \
+    unisoc_iommu_recovery \
+    pwm_sprd_recovery \
+    apsys_dvfs_recovery \
+    sprd_drm_recovery \
+    sprd_gsp_recovery \
+    ptn38003a_i2c_recovery \
+    chipone_tddi_icnl9916_recovery \
+    modules_load_recovery \
+    modules_dep_recovery \
+    modules_softdep
+
