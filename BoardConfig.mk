@@ -76,6 +76,26 @@ BOARD_RAMDISK_USE_LZ4 := true
 
 # A/B + dynamic partitions + vendor_boot
 AB_OTA_UPDATER := true
+# Required whenever AB_OTA_UPDATER is true (build/make/core/Makefile:4792).
+# Boot-critical A/B partitions, plus every logical partition living in `super`.
+# Matches partition_list.xml: boot_a/b, vendor_boot_a/b, dtbo_a/b, vbmeta_*,
+# and the super group members.
+AB_OTA_PARTITIONS += \
+    boot \
+    vendor_boot \
+    dtbo \
+    vbmeta \
+    vbmeta_system \
+    vbmeta_system_ext \
+    vbmeta_vendor \
+    vbmeta_product \
+    vbmeta_odm \
+    odm \
+    product \
+    system \
+    system_ext \
+    vendor \
+    vendor_dlkm
 TARGET_USES_DYNAMIC_PARTITIONS := true
 TARGET_USES_VENDOR_BOOT := true
 BOARD_USES_VENDOR_BOOTIMAGE := true
