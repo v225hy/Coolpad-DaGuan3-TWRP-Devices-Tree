@@ -30,35 +30,78 @@ TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
 
 # Kernel
-# Kernel is prebuilt from stock boot_a: 5.4.210, clang 12.0.5 / LLD, GKI-ish vendor modules
+# The kernel lives in boot_a (Android v4, 36.60 MB kernel, 1.40 MB ramdisk),
+# NOT in vendor_boot. Stock vendor_boot_a is VNDRBOOT v4 with a single
+# PLATFORM ramdisk fragment and carries no kernel of its own. So we do not
+# ship a kernel inside vendor_boot: TARGET_NO_KERNEL keeps it out and
+# TARGET_PREBUILT_KERNEL stays unset.
+TARGET_NO_KERNEL := true
 TARGET_KERNEL_ARCH := arm64
 TARGET_KERNEL_HEADER_ARCH := arm64
-TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/Image
+
+# Values below are measured from stock vendor_boot_a (unpack_bootimg output):
+#   page_size=4096  kernel_addr=0x00008000  ramdisk_addr=0x05400000
+#   tags_addr=0x00000100  dtb_addr=0x01f00000  header_size=2128
+#   cmdline="console=ttyS1,115200n8 buildvariant=user"
+BOARD_BOOT_HEADER_VERSION := 4
+BOARD_PAGE_SIZE := 4096
+BOARD_KERNEL_PAGESIZE := 4096
+BOARD_KERNEL_BASE := 0x00000000
+BOARD_KERNEL_OFFSET := 0x00008000
+BOARD_RAMDISK_OFFSET := 0x05400000
+BOARD_TAGS_OFFSET := 0x00000100
+BOARD_DTB_OFFSET := 0x01f00000
+BOARD_HEADER_SIZE := 2128
+BOARD_VENDOR_CMDLINE := console=ttyS1,115200n8 buildvariant=user
+
 TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb
 TARGET_PREBUILT_DTBO := $(DEVICE_PATH)/prebuilt/dtbo.img
 BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img
 BOARD_INCLUDE_DTB_IN_BOOTIMG := false
 BOARD_INCLUDE_RECOVERY_DTBO := true
 BOARD_KERNEL_IMAGE_NAME := Image
-BOARD_KERNEL_PAGESIZE := 4096
-BOARD_BOOT_HEADER_VERSION := 4
+
 BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
+BOARD_MKBOOTIMG_ARGS += --pagesize $(BOARD_PAGE_SIZE)
+BOARD_MKBOOTIMG_ARGS += --base $(BOARD_KERNEL_BASE)
+BOARD_MKBOOTIMG_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_TAGS_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --dtb_offset $(BOARD_DTB_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --vendor_cmdline "$(BOARD_VENDOR_CMDLINE)"
+BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
+
+# Stock vendor ramdisk uses legacy LZ4
+BOARD_RAMDISK_USE_LZ4 := true
 
 # A/B + dynamic partitions + vendor_boot
 AB_OTA_UPDATER := true
 TARGET_USES_DYNAMIC_PARTITIONS := true
 TARGET_USES_VENDOR_BOOT := true
 BOARD_USES_VENDOR_BOOTIMAGE := true
+# Recovery lives in vendor_boot on this device: there is no standalone
+# recovery partition. Without this, `make vendorbootimage` produces a
+# vendor_boot without TWRP inside.
+BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
+BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
+# Does NOT set BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT: that would add a
+# separate VENDOR_RAMDISK_TYPE_RECOVERY fragment, but the stock vendor_boot has
+# exactly one PLATFORM (0x1) fragment and no RECOVERY entry.
+# Also does NOT set TARGET_NO_RECOVERY - TWRP still needs the recovery ramdisk
+# built; BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT relocates it afterwards.
 TARGET_COPY_OUT_VENDOR := vendor
 TARGET_COPY_OUT_ODM := odm
 TARGET_COPY_OUT_VENDOR_DLKM := vendor_dlkm
-TARGET_COPY_OUT_ODM_DLKM := odm_dlkm
 TARGET_COPY_OUT_SYSTEM_EXT := system_ext
 TARGET_COPY_OUT_PRODUCT := product
+# NOTE: no TARGET_COPY_OUT_ODM_DLKM on this device - it has no odm_dlkm
+# partition (see partition_list.xml; all logical partitions live in `super`).
+# Declaring it forces board_config.mk to require BOARD_ODM_DLKMIMAGE_*. 
 BOARD_SUPER_PARTITION_SIZE := 8589934592
 BOARD_SUPER_PARTITION_GROUPS := group_a
 BOARD_GROUP_A_PARTITION_LIST := system system_ext vendor product odm vendor_dlkm
-BOARD_GROUP_A_SIZE := 8589934592
+# group must be strictly smaller than super: LP metadata lives inside super.
+BOARD_GROUP_A_SIZE := 8588886016
 BOARD_USES_METADATA_PARTITION := true
 
 # Filesystem
@@ -75,7 +118,10 @@ TARGET_USES_MKE2FS := true
 # Recovery
 TARGET_RECOVERY_PIXEL_FORMAT := "ABGR_8888"
 TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery.fstab
-TARGET_RECOVERY_DEVICE_DIRS += $(DEVICE_PATH)
+# NOTE: deliberately NOT setting TARGET_RECOVERY_DEVICE_DIRS to $(DEVICE_PATH):
+# that copies the whole device tree (38 MB kernel + 42 MB modules) into the
+# recovery ramdisk, which cannot fit the 100 MB vendor_boot. Anything that must
+# land in the ramdisk goes under recovery/root/ instead.
 TARGET_RECOVERY_INITRC := $(DEVICE_PATH)/init.recovery.agn2262SG.rc
 TARGET_USES_LOGD := true
 TARGET_RECOVERY_WIPE := $(DEVICE_PATH)/recovery/root/system/etc/recovery.wipe
@@ -104,7 +150,6 @@ TW_SCREEN_BLANK_ON_BOOT := true
 TW_INPUT_BLACKLIST := "hbtp_vm"
 TW_EXCLUDE_TWRPAPP := true
 TW_EXTRA_LANGUAGES := true
-TW_SCREEN_BLANK_ON_BOOT := true
 TW_NO_LEGACY_PROPS := true
 TW_HAS_EDL_MODE := false
 
