@@ -146,6 +146,34 @@ TARGET_COPY_OUT_ODM := odm
 TARGET_COPY_OUT_VENDOR_DLKM := vendor_dlkm
 TARGET_COPY_OUT_SYSTEM_EXT := system_ext
 TARGET_COPY_OUT_PRODUCT := product
+
+# ---------------------------------------------------------------------------
+# Seed the vendor ramdisk with the complete stock vendor ramdisk
+# ---------------------------------------------------------------------------
+# AOSP packs vendor_boot's ramdisk as:
+#     mkbootfs $(TARGET_VENDOR_RAMDISK_OUT) $(TARGET_RECOVERY_ROOT_OUT)
+# i.e. the vendor tree first, then the recovery root, later entries winning.
+#
+# Without this step $(TARGET_VENDOR_RAMDISK_OUT) only held the kernel modules
+# we install, so the resulting ramdisk had NO first_stage_ramdisk, NO
+# ueventd.*.rc, NO init.recovery.common.rc and no stock res/ - the vendor
+# recovery environment was simply absent and TWRP could not start.
+#
+# Same approach as ZTE-7552N-P720S20-devicetree: ship the stock vendor ramdisk
+# as a prebuilt legacy-LZ4 blob and unpack it into the vendor tree before
+# packaging.
+#
+# The stock *_service_contexts files are deleted afterwards: they name SELinux
+# types that exist in the stock policy but not in the TWRP recovery policy
+# (agent 610168 bytes), and init fails parsing them.
+BOARD_RECOVERY_IMAGE_PREPARE := \
+    python3 device/Coolpad/agn2262SG/tools/extract_stock_vendor_ramdisk.py \
+        device/Coolpad/agn2262SG/prebuilt/vendor_ramdisk_stock.lz4 \
+        $(TARGET_VENDOR_RAMDISK_OUT) $(LZ4) && \
+    rm -f $(TARGET_VENDOR_RAMDISK_OUT)/plat_service_contexts \
+          $(TARGET_VENDOR_RAMDISK_OUT)/product_service_contexts \
+          $(TARGET_VENDOR_RAMDISK_OUT)/system_ext_service_contexts \
+          $(TARGET_VENDOR_RAMDISK_OUT)/vendor_service_contexts
 # NOTE: no TARGET_COPY_OUT_ODM_DLKM on this device - it has no odm_dlkm
 # partition (see partition_list.xml; all logical partitions live in `super`).
 # Declaring it forces board_config.mk to require BOARD_ODM_DLKMIMAGE_*. 
@@ -181,6 +209,31 @@ BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_SUPPRESS_EMMC_WIPE := true
 TW_INCLUDE_FBE_METADATA_DECRYPT := true
 TW_USE_TOOLBOX := true
+
+# ---------------------------------------------------------------------------
+# libresetprop.so MUST be relinked into the recovery ramdisk
+# ---------------------------------------------------------------------------
+# bootable/recovery's `recovery` links against libresetprop.so, but the normal
+# relink pass runs before that library is installed into $(TARGET_OUT), so it
+# was silently omitted. The result was a recovery binary whose NEEDED list
+# could not be satisfied: the linker aborts, recovery never starts, and the
+# device shows a black screen until the watchdog resets it.
+#
+# Symptom check:
+#     readelf -d recovery | grep NEEDED   -> libresetprop.so
+#     ls recovery/root/system/lib64/libresetprop.so  -> missing
+#
+# Same fix as ZTE-7552N-P720S20-devicetree.
+TW_RECOVERY_ADDITIONAL_RELINK_LIBRARY_FILES += $(TARGET_OUT_SHARED_LIBRARIES)/libresetprop.so
+
+# TWRP's init.rc imports /init.recovery.logd.rc; only produced when logd is
+# part of the recovery build.
+TWRP_INCLUDE_LOGCAT := true
+
+# The stock init.recovery.common.rc owns the Unisoc configfs USB gadget setup;
+# TWRP's default USB init would fight it.
+TW_EXCLUDE_DEFAULT_USB_INIT := true
+
 TW_INCLUDE_NTFS_3G := true
 TW_INCLUDE_FUSE_EXFAT := true
 TW_INCLUDE_FUSE_NTFS := true
