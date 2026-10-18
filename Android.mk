@@ -30,11 +30,26 @@
 #       error: found ELF prebuilt in PRODUCT_COPY_FILES,
 #              use cc_prebuilt_binary / cc_prebuilt_library_shared instead.
 #
-# Why LOCAL_MODULE_PATH uses TARGET_RECOVERY_OUT
-#   A bare relative path ("recovery/root/...") resolves against the source
-#   tree, and kati refuses to emit the rule:
+# Why modules go into TARGET_VENDOR_RAMDISK_OUT, not the recovery root
+#   core/Makefile:1096 packs the vendor ramdisk with
+#       $(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR)
+#   mkbootfs requires that first directory to EXIST. When every module was
+#   installed into recovery/root/lib/modules nothing created
+#   $(PRODUCT_OUT)/vendor_ramdisk, so the recipe died with:
+#       error: cannot open directory 'out/target/product/agn2262SG/vendor_ramdisk'
+#   and vendor_boot.img came out as a 168 KB stub containing only the header
+#   and the dtb - no ramdisk at all.
+#
+#   Putting modules in the vendor ramdisk is also what the stock image does:
+#   unpacking vendor_boot_a shows lib/modules inside the vendor ramdisk, not in
+#   the recovery root. With BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT the
+#   packer concatenates both trees into one cpio, so /lib/modules still lands
+#   where init.recovery.*.rc expects it.
+#
+#   TARGET_VENDOR_RAMDISK_OUT is core/envsetup.mk:929's
+#   $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR_RAMDISK), i.e. an absolute path
+#   under PRODUCT_OUT - a bare relative path would make kati refuse:
 #       build/make/core/base_rules.mk:525: error: writing to readonly directory
-#   TARGET_RECOVERY_OUT is core/envsetup.mk:941's $(PRODUCT_OUT)/recovery.
 #
 # Naming
 #   LOCAL_MODULE may not contain dots or dashes, so the on-disk name is
@@ -51,7 +66,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE        := $(1)
 LOCAL_MODULE_STEM   := $(2)
 LOCAL_MODULE_CLASS  := ETC
-LOCAL_MODULE_PATH   := $(TARGET_RECOVERY_OUT)/root/lib/modules
+LOCAL_MODULE_PATH   := $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules
 LOCAL_SRC_FILES     := modules_recovery/$(2)
 LOCAL_MODULE_TAGS   := optional
 include $(BUILD_PREBUILT)
