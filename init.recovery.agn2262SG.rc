@@ -1,3 +1,14 @@
+# TWRP's init.rc imports /init.recovery.${ro.hardware}.rc (this file) but NOT
+# /init.recovery.common.rc, whereas the stock init.rc imports common.rc on its
+# very first line. Everything Unisoc puts in there - the configfs USB gadget,
+# the splloader by-name links, mlogservice, and the whole set of on init /
+# on boot / on fs / on post-fs-data actions - therefore never ran under TWRP,
+# so the vendor side of recovery was half-initialised.
+#
+# Same pattern as ZTE-7552N-P720S20-devicetree, where
+# init.recovery.ums9620_2h10.rc line 2 is exactly this import.
+import /init.recovery.common.rc
+
 #
 # init.recovery.agn2262SG.rc
 # Coolpad CP3NV1 (酷派大观3) / Unisoc UMS9620 (qogirn6pro) / board agn2262SG
