@@ -166,7 +166,10 @@ TARGET_COPY_OUT_PRODUCT := product
 # The stock *_service_contexts files are deleted afterwards: they name SELinux
 # types that exist in the stock policy but not in the TWRP recovery policy
 # (agent 610168 bytes), and init fails parsing them.
-BOARD_RECOVERY_IMAGE_PREPARE := \
+# NOTE: recursive '=' not ':=' - TARGET_VENDOR_RAMDISK_OUT and LZ4 are defined
+# in envsetup.mk / config.mk AFTER BoardConfig.mk is parsed. With ':=' they
+# expand to empty here and the command runs with missing arguments.
+BOARD_RECOVERY_IMAGE_PREPARE = \
     python3 device/Coolpad/agn2262SG/tools/extract_stock_vendor_ramdisk.py \
         device/Coolpad/agn2262SG/prebuilt/vendor_ramdisk_stock.lz4 \
         $(TARGET_VENDOR_RAMDISK_OUT) $(LZ4) && \
