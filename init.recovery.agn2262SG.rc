@@ -75,14 +75,16 @@ on post-fs
     chmod 0666 /dev/dri/renderD128
     chown system graphics /dev/dri/renderD128
 
-    # 背光 sysfs（TW_BRIGHTNESS_PATH 指向这里）
-    chown system system /sys/class/backlight/sprd-qogirn6pro-backlight/brightness
-    chmod 0664 /sys/class/backlight/sprd-qogirn6pro-backlight/brightness
-    chmod 0644 /sys/class/backlight/sprd-qogirn6pro-backlight/max_brightness
+    # 背光 sysfs
+    # 实测节点名是 sprd_backlight（不是 sprd-qogirn6pro-backlight），
+    # max_brightness = 255（不是 dtb 里的 880，880 是 pwm 内部 scale）。
+    chown system system /sys/class/backlight/sprd_backlight/brightness
+    chmod 0664 /sys/class/backlight/sprd_backlight/brightness
+    chmod 0644 /sys/class/backlight/sprd_backlight/max_brightness
 
 on boot
-    # 点亮背光到默认档（原厂 default-brightness-level = 250 / max 880）
-    write /sys/class/backlight/sprd-qogirn6pro-backlight/brightness 400
+    # 点亮背光。实测 max_brightness=255，取满值避免暗屏误判为"没显示"。
+    write /sys/class/backlight/sprd_backlight/brightness 255
 
 on property:ro.boot.hardware=agn2262SG
     # 平台确认后输出 DRM 状态，便于 adb 侧定位

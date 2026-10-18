@@ -193,10 +193,15 @@ TW_EXCLUDE_APEX := true
 # TWRP
 TW_THEME := portrait_hdpi
 DEVICE_RESOLUTION := 1080x2408
-TW_MAX_BRIGHTNESS := 880
-TW_DEFAULT_BRIGHTNESS := 400
-TW_BRIGHTNESS_PATH := "/sys/class/backlight/sprd-qogirn6pro-backlight/brightness"
-TW_MAX_BRIGHTNESS_PATH := "/sys/class/backlight/sprd-qogirn6pro-backlight/max_brightness"
+# Backlight — measured on the live device:
+#   /sys/class/backlight/sprd_backlight/{brightness,max_brightness}
+#   max_brightness = 255
+# The node is NOT called sprd-qogirn6pro-backlight; 880 is the pwm period scale
+# inside the dts, not the sysfs ceiling, so it must not be used here.
+TW_BRIGHTNESS_PATH := "/sys/class/backlight/sprd_backlight/brightness"
+TW_MAX_BRIGHTNESS_PATH := "/sys/class/backlight/sprd_backlight/max_brightness"
+TW_MAX_BRIGHTNESS := 255
+TW_DEFAULT_BRIGHTNESS := 255
 TW_NO_SCREEN_BLANK := false
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_INPUT_BLACKLIST := "hbtp_vm"
