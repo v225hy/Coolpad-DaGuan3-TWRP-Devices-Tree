@@ -37,6 +37,12 @@ TARGET_BOOTLOADER_BOARD_NAME := 2262SG
 TARGET_NO_BOOTLOADER := true
 TARGET_BOARD_PLATFORM := ums9620
 BOARD_USES_SPRD_HARDWARE := true
+# config.mk rejects the product outright when any BOARD_SYSTEMSDK_VERSIONS
+# entry is below PRODUCT_SHIPPING_API_LEVEL. The generated tree sets the
+# shipping API level to 33 (Android 13) while the default system SDK list is
+# 32, so product parsing aborted and lunch fell back to aosp_arm - which in
+# turn left every TWRP make variable empty and broke theme selection.
+BOARD_SYSTEMSDK_VERSIONS := 33
 
 TARGET_SCREEN_DENSITY := 480
 
