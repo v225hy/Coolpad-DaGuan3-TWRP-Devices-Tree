@@ -81,9 +81,17 @@ service charger /system/bin/charger
     critical
     seclabel u:r:charger:s0
 
+# Diagnostics build: the TWRP recovery binary is deliberately NOT started.
+# It hangs somewhere after init in this vendor environment (black screen, no
+# ADB, no reboot), and with no way to read its logs every ramdisk change was a
+# guess. Keeping it disabled lets init finish its normal course, the stock
+# Unisoc USB flow bind the gadget and adbd come up - which is all that is
+# needed to pull dmesg, mounts, /sys/class/drm and raw partitions.
+# Re-enable by removing the `disabled` line below.
 service recovery /system/bin/recovery
     socket recovery stream 422 system system
     seclabel u:r:recovery:s0
+    disabled
 
 service adbd /system/bin/adbd --root_seclabel=u:r:shell:s0 --device_banner=recovery
     disabled

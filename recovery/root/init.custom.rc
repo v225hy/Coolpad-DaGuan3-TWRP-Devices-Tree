@@ -1,37 +1,32 @@
 # Local overrides for the Unisoc vendor_boot recovery environment.
 #
-# 1) SELinux: the stock policy is patched at build time so the init and
-#    recovery domains are permissive. Writing enforce here only works because
-#    of that patch - a plain `write` from a non-permissive init domain is
-#    denied, which is why earlier attempts silently did nothing.
+# This is a diagnostics image: the recovery binary is disabled in init.rc, so
+# all that runs is init, the stock Unisoc services and adbd. The goal is a
+# working adb connection on a device that otherwise gives a black screen.
+
+# 1) SELinux. The stock policy is patched at build time so init, recovery,
+#    adbd and shell are permissive. Writing enforce here only works because of
+#    that patch - a plain `write` from a non-permissive init domain is denied.
 on early-init
     write /sys/fs/selinux/enforce 0
 
-# 2) USB gadget ownership.
+# 2) Order matters, and the properties are not interchangeable:
 #
-#    Two things compete for the gadget:
-#      - TWRP's init.rc, which runs `mount functionfs adb /dev/usb-ffs/adb` in
-#        its `on fs` block. That mount BLOCKS until the gadget is bound to a UDC.
-#      - the stock Unisoc flow in init.recovery.common.rc, which configures and
-#        binds the gadget only when all of these hold:
-#             sys.usb.configfs=1
-#             sys.usb.ffs.ready=1
-#             sys.usb.config=adb,vser,gser
+#    * sys.usb.configfs must be 1 before `on fs` runs, because init.rc creates
+#      the /config/usb_gadget/g1 skeleton in an `on fs && property:...` block.
 #
-#    TWRP only ever sets `sys.usb.config=adb`, so with the vendor flow in
-#    charge the gadget never binds, the functionfs mount never returns, init
-#    stays blocked in `on fs`, adbd is never started and the panel never comes
-#    up - black screen, no ADB, no reboot.
+#    * adbd must start only AFTER `on fs` has mounted functionfs at
+#      /dev/usb-ffs/adb. adbd opens ep0 there and is the only thing that sets
+#      sys.usb.ffs.ready=1, which in turn is what lets
+#      init.recovery.common.rc write the UDC and bind the gadget. Starting
+#      adbd in `on init` is too early: ep0 does not exist yet, ffs.ready stays
+#      0, the gadget never binds and nothing ever enumerates.
 #
-#    Publish the vendor's expected values early so the stock flow runs and the
-#    mount can complete.
+#    This file is imported at the very end of init.rc, so its `on fs` block is
+#    queued after the vendor ones and the mounts are already in place.
 on init
     setprop sys.usb.configfs 1
-    setprop sys.usb.config adb,vser,gser
 
-#    Neither side starts adbd for the vendor string:
-#      - TWRP only matches `on property:sys.usb.config=adb`
-#      - init.recovery.common.rc binds the UDC but never mentions adbd
-#    Start it explicitly so the daemon is running and simply waits for the
-#    adb function to become enabled.
+on fs
+    setprop sys.usb.config adb,vser,gser
     start adbd
