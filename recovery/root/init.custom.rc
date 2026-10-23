@@ -1,0 +1,5 @@
+# Keep recovery permissive after the stock policy is patched at build time.
+# This is an init rc write, not a shell command. It only affects this recovery
+# boot and does not modify the normal Android boot/vendor_boot command line.
+on early-init
+    write /sys/fs/selinux/enforce 0

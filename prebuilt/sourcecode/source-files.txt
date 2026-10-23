@@ -1,0 +1,14 @@
+# Paths are relative to the TWRP source root.
+bootable/recovery/Android.mk
+bootable/recovery/data.cpp
+bootable/recovery/etc/init.rc
+bootable/recovery/partition.cpp
+bootable/recovery/partitionmanager.cpp
+system/core/fastboot/device/fastboot_device.cpp
+system/vold/KeyUtil.cpp
+system/vold/Keymaster.cpp
+system/vold/MetadataCrypt.cpp
+bootable/recovery/minuitwrp/events.cpp
+bootable/recovery/minuitwrp/libminuitwrp_defaults.go
+vendor/twrp/config/BoardConfigSoong.mk
+bootable/recovery/minuitwrp/graphics_drm.cpp

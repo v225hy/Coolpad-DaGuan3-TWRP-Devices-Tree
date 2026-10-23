@@ -1,0 +1,4 @@
+# Generated Unisoc recovery init entry point.
+# The stock common file supplies Unisoc storage, USB, and health services.
+import /init.recovery.common.rc
+import /init.custom.rc
