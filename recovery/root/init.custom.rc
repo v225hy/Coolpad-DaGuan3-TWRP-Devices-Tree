@@ -1,39 +1,40 @@
 # Local overrides, imported from init.recovery.${ro.hardware}.rc.
 #
-# init.rc here is TWRP's own (the vendor copy was tried and hung earlier, at the
-# first boot screen). TWRP's init.rc already owns the whole USB gadget flow:
-# it creates /config/usb_gadget/g1 with ffs.adb + ffs.fastboot, and writes the
-# UDC on `on property:sys.usb.config=adb`. Do NOT publish the vendor string
-# "adb,vser,gser" here: init.recovery.common.rc would then try to symlink
-# functions/vser.gs7 and functions/gser.gs0, which TWRP never creates, and the
-# bind aborts.
+# init.rc is TWRP's own. Do NOT publish the vendor "adb,vser,gser" string here:
+# init.recovery.common.rc would then symlink functions/vser.gs7 and
+# functions/gser.gs0, which TWRP never creates, and the gadget bind aborts.
 
 on early-init
-    # Only effective because the stock policy is patched to make init, recovery,
-    # adbd and shell permissive at build time.
+    # Only effective because the stock policy is patched so that init, recovery,
+    # adbd and shell are permissive at build time.
     write /sys/fs/selinux/enforce 0
 
 # ---------------------------------------------------------------------------
-# Progress beacons.
+# Log dumping.
 #
-# On this device recovery shows a lit-but-black panel and never brings up ADB,
-# so there is no way to see how far init got. A vibration is the one output
-# that works without a framebuffer or a USB connection, so pulse it at each
-# stage - the pattern tells us where it stops.
+# Recovery currently ends up with a lit-but-black panel: no framebuffer
+# content, no ADB, and this board has no vibration motor, so there is no way to
+# observe progress from outside. /dump.sh copies dmesg, /proc/mounts and the
+# DRM/graphics device listings onto the cache partition, which survives the
+# reboot and can be read afterwards from a rooted Android system:
 #
-#   ~100 ms  short tick     -> `on init`      (early init completed)
-#   ~400 ms  medium buzz    -> `on late-init` (filesystems up)
-#   ~900 ms  long buzz      -> `on boot`      (everything init controls ran)
+#     su -c 'mkdir -p /mnt/c && mount /dev/block/by-name/cache /mnt/c'
+#     adb pull /mnt/c/dg3
 #
-# Durations are deliberately far apart so they can be told apart by feel.
-#
-# /sys/class/timed_output/vibrator/enable takes a duration in milliseconds.
+# `on fs` is the interesting one: it runs right after the vendor mounts, so even
+# if init blocks there the dump already exists.
 # ---------------------------------------------------------------------------
-on init
-    write /sys/class/timed_output/vibrator/enable 100
-
-on late-init
-    write /sys/class/timed_output/vibrator/enable 400
+on fs
+    start dg3dump
 
 on boot
-    write /sys/class/timed_output/vibrator/enable 900
+    start dg3dump
+
+service dg3dump /system/bin/sh /dump.sh
+    user root
+    group root
+    oneshot
+    disabled
+    # shell is permissive thanks to the policy patch, and shell_exec is its own
+    # entry point, so executing /system/bin/sh from here is allowed.
+    seclabel u:r:shell:s0
