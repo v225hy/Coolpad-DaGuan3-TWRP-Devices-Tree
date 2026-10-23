@@ -9,7 +9,7 @@ LOCAL_PATH := device/Coolpad/agn2262SG
 
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 PRODUCT_VIRTUAL_AB_OTA := true
-PRODUCT_SHIPPING_API_LEVEL := 33
+PRODUCT_SHIPPING_API_LEVEL := 32
 
 # Retain the factory payload required before dynamic partitions are mounted.
 SPRD_VENDOR_RAMDISK_FILES := \
