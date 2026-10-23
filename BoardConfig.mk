@@ -144,6 +144,11 @@ TARGET_USES_LOGD := true
 TW_INCLUDE_RESETPROP := true
 TW_INCLUDE_REPACKTOOLS := true
 TW_INCLUDE_LIBRESETPROP := true
+# TWRP resolves TW_THEME through soong make vars, which this source tree does
+# not propagate; without a resolution the theme lookup fails hard. Declaring
+# DEVICE_RESOLUTION makes TARGET_SCREEN_WIDTH/HEIGHT available so the theme
+# is selected from the panel size instead.
+DEVICE_RESOLUTION := 1080x2408
 TW_THEME := portrait_hdpi
 TW_EXTRA_LANGUAGES := true
 TW_DEFAULT_LANGUAGE := zh_CN
