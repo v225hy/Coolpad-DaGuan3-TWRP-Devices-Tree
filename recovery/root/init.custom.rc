@@ -1,5 +1,37 @@
-# Keep recovery permissive after the stock policy is patched at build time.
-# This is an init rc write, not a shell command. It only affects this recovery
-# boot and does not modify the normal Android boot/vendor_boot command line.
+# Local overrides for the Unisoc vendor_boot recovery environment.
+#
+# 1) SELinux: the stock policy is patched at build time so the init and
+#    recovery domains are permissive. Writing enforce here only works because
+#    of that patch - a plain `write` from a non-permissive init domain is
+#    denied, which is why earlier attempts silently did nothing.
 on early-init
     write /sys/fs/selinux/enforce 0
+
+# 2) USB gadget ownership.
+#
+#    Two things compete for the gadget:
+#      - TWRP's init.rc, which runs `mount functionfs adb /dev/usb-ffs/adb` in
+#        its `on fs` block. That mount BLOCKS until the gadget is bound to a UDC.
+#      - the stock Unisoc flow in init.recovery.common.rc, which configures and
+#        binds the gadget only when all of these hold:
+#             sys.usb.configfs=1
+#             sys.usb.ffs.ready=1
+#             sys.usb.config=adb,vser,gser
+#
+#    TWRP only ever sets `sys.usb.config=adb`, so with the vendor flow in
+#    charge the gadget never binds, the functionfs mount never returns, init
+#    stays blocked in `on fs`, adbd is never started and the panel never comes
+#    up - black screen, no ADB, no reboot.
+#
+#    Publish the vendor's expected values early so the stock flow runs and the
+#    mount can complete.
+on init
+    setprop sys.usb.configfs 1
+    setprop sys.usb.config adb,vser,gser
+
+#    Neither side starts adbd for the vendor string:
+#      - TWRP only matches `on property:sys.usb.config=adb`
+#      - init.recovery.common.rc binds the UDC but never mentions adbd
+#    Start it explicitly so the daemon is running and simply waits for the
+#    adb function to become enabled.
+    start adbd
