@@ -1,32 +1,39 @@
-# Local overrides for the Unisoc vendor_boot recovery environment.
+# Local overrides, imported from init.recovery.${ro.hardware}.rc.
 #
-# This is a diagnostics image: the recovery binary is disabled in init.rc, so
-# all that runs is init, the stock Unisoc services and adbd. The goal is a
-# working adb connection on a device that otherwise gives a black screen.
+# init.rc here is TWRP's own (the vendor copy was tried and hung earlier, at the
+# first boot screen). TWRP's init.rc already owns the whole USB gadget flow:
+# it creates /config/usb_gadget/g1 with ffs.adb + ffs.fastboot, and writes the
+# UDC on `on property:sys.usb.config=adb`. Do NOT publish the vendor string
+# "adb,vser,gser" here: init.recovery.common.rc would then try to symlink
+# functions/vser.gs7 and functions/gser.gs0, which TWRP never creates, and the
+# bind aborts.
 
-# 1) SELinux. The stock policy is patched at build time so init, recovery,
-#    adbd and shell are permissive. Writing enforce here only works because of
-#    that patch - a plain `write` from a non-permissive init domain is denied.
 on early-init
+    # Only effective because the stock policy is patched to make init, recovery,
+    # adbd and shell permissive at build time.
     write /sys/fs/selinux/enforce 0
 
-# 2) Order matters, and the properties are not interchangeable:
+# ---------------------------------------------------------------------------
+# Progress beacons.
 #
-#    * sys.usb.configfs must be 1 before `on fs` runs, because init.rc creates
-#      the /config/usb_gadget/g1 skeleton in an `on fs && property:...` block.
+# On this device recovery shows a lit-but-black panel and never brings up ADB,
+# so there is no way to see how far init got. A vibration is the one output
+# that works without a framebuffer or a USB connection, so pulse it at each
+# stage - the pattern tells us where it stops.
 #
-#    * adbd must start only AFTER `on fs` has mounted functionfs at
-#      /dev/usb-ffs/adb. adbd opens ep0 there and is the only thing that sets
-#      sys.usb.ffs.ready=1, which in turn is what lets
-#      init.recovery.common.rc write the UDC and bind the gadget. Starting
-#      adbd in `on init` is too early: ep0 does not exist yet, ffs.ready stays
-#      0, the gadget never binds and nothing ever enumerates.
+#   ~100 ms  short tick     -> `on init`      (early init completed)
+#   ~400 ms  medium buzz    -> `on late-init` (filesystems up)
+#   ~900 ms  long buzz      -> `on boot`      (everything init controls ran)
 #
-#    This file is imported at the very end of init.rc, so its `on fs` block is
-#    queued after the vendor ones and the mounts are already in place.
+# Durations are deliberately far apart so they can be told apart by feel.
+#
+# /sys/class/timed_output/vibrator/enable takes a duration in milliseconds.
+# ---------------------------------------------------------------------------
 on init
-    setprop sys.usb.configfs 1
+    write /sys/class/timed_output/vibrator/enable 100
 
-on fs
-    setprop sys.usb.config adb,vser,gser
-    start adbd
+on late-init
+    write /sys/class/timed_output/vibrator/enable 400
+
+on boot
+    write /sys/class/timed_output/vibrator/enable 900
