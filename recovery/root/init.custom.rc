@@ -1,18 +1,5 @@
+# Keep recovery permissive after the stock policy is patched at build time.
+# This is an init rc write, not a shell command. It only affects this recovery
+# boot and does not modify the normal Android boot/vendor_boot command line.
 on early-init
     write /sys/fs/selinux/enforce 0
-
-on init
-    setprop sys.usb.configfs 1
-    setprop sys.usb.config adb,vser,gser
-    start adbd
-    start dg3dump
-
-on fs
-    start dg3dump
-
-service dg3dump /system/bin/sh /dump.sh
-    user root
-    group root
-    oneshot
-    disabled
-    seclabel u:r:shell:s0
